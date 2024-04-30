@@ -1,0 +1,35 @@
+{
+  "name": "bakana-takane",
+  "version": "0.1.0",
+  "description": "Extensions to the bakana single-cell analysis pipeline to accept takane-formatted datasets and results. This facilitates interoperability with the rest of the ArtifactDB ecosystem.",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --experimental-vm-modules --experimental-wasm-threads node_modules/jest/bin/jest.js --testTimeout=1000000 --runInBand --detectOpenHandles --forceExit",
+    "jsdoc": "npx jsdoc -r src README.md -d docs/built -c docs/jsdoc.config.json"
+  },
+  "repository": "github:kanaverse/bakana-takane",
+  "homepage": "https://github.com/kanaverse/bakana-takane#readme",
+  "bugs": "https://github.com/kanaverse/bakana-takane/issues",
+  "keywords": [
+    "bioinformatics",
+    "single-cell",
+    "scRNA-seq"
+  ],
+  "author": {
+    "name": "Aaron Lun",
+    "email": "infinite.monkeys.with.keyboards@gmail.com",
+    "url": "https://github.com/LTLA"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "bioconductor": "^0.3.1",
+    "scran.js": "^3.0.0"
+  },
+  "devDependencies": {
+    "docdash": "^2.0.1",
+    "jest": "^27.5.1",
+    "jsdoc": "^4.0.1",
+    "wasmarrays.js": "^0.1.0"
+  }
+}
