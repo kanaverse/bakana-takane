@@ -1,5 +1,6 @@
 import * as scran from "scran.js";
 import * as bioc from "bioconductor";
+import * as utils from "./utils.js";
 
 export async function readDataFrame(path, navigator) {
     let colnames;
@@ -28,7 +29,7 @@ export async function readDataFrame(path, navigator) {
                 // Try to load nested objects if they're DFs, but don't try too hard.
                 let nested_path = path + "/other_columns/" + iname;
                 try {
-                    columns.push(await readDataFrame(nested_path, getter));
+                    columns.push(await readDataFrame(nested_path, navigator));
                 } catch (e) {
                     console.warn("failed to extract nested DataFrame at '" + nested_path + "'; " + e.message);
                     columns.push(null);
@@ -39,29 +40,48 @@ export async function readDataFrame(path, navigator) {
             let current;
             let objtype = chandle.children[iname]
 
-            if (obtype == "DataSet") {
+            if (objtype == "DataSet") {
                 let dhandle = chandle.open(iname, { load: true });
                 let type = dhandle.readAttribute("type").values[0];
 
+                let placeholder = null;
+                if (dhandle.attributes.indexOf("missing-value-placeholder") >= 0) {
+                    placeholder = dhandle.readAttribute("missing-value-placeholder").values[0];
+                }
+
                 if (type == "integer" || type == "string") {
                     current = dhandle.values;
+                    if (placeholder !== null) {
+                        current = utils.substitutePlaceholder(current, placeholder);
+                    }
+
                 } else if (type == "number") {
                     current = dhandle.values;
                     if (!(current instanceof Float64Array) && !(current instanceof Float32Array)) {
                         current = new Float64Array(current);
                     }
+                    if (placeholder !== null) {
+                        current = utils.substitutePlaceholder(current, placeholder);
+                    }
+
                 } else if (type == "boolean") {
                     current = new Array(dhandle.values.length);
-                    for (const [i, x] of dhandle.values.entries()) {
-                        current[i] = (x != 0);
+                    if (placeholder !== null) {
+                        for (const [i, x] of dhandle.values.entries()) {
+                            if (x == placeholder) {
+                                current[i] = null;
+                            } else {
+                                current[i] = (x != 0);
+                            }
+                        }
+                    } else {
+                        for (const [i, x] of dhandle.values.entries()) {
+                            current[i] = (x != 0);
+                        }
                     }
+
                 } else {
                     throw new Error("data frame column has unknown type '" + type + "'");
-                }
-
-                if ("missing-value-placeholder" in dhandle.attributes) {
-                    let placeholder = dhandle.readAttribute("missing-value-placeholder").values[0];
-                    current = utils.substitutePlaceholder(current, placeholder);
                 }
 
             } else if (objtype == "Group") {
@@ -74,7 +94,7 @@ export async function readDataFrame(path, navigator) {
                     let codes = chandle.values;
 
                     let placeholder = -1;
-                    if ("missing-value-placeholder" in chandle.attributes) {
+                    if (chandle.attributes.indexOf("missing-value-placeholder") >= 0) {
                         placeholder = chandle.readAttribute("missing-value-placeholder").values[0];
                     }
 

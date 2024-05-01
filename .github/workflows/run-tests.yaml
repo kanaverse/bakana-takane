@@ -1,0 +1,69 @@
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+name: Run tests
+
+jobs:
+  setup-r:
+    runs-on: ubuntu-latest
+    container: bioconductor/bioconductor_docker:devel
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set directories
+        run: |
+          echo "R_PKG_DIR=${R_HOME}/site-library" >> $GITHUB_ENV
+
+      - name: Restore the package directory
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.R_PKG_DIR }}
+          key: check-packages
+
+      - name: Install dependencies
+        shell: Rscript {0}
+        run: |
+          BiocManager::install("alabaster.sce")
+
+      - name: Build test objects
+        run: |
+          find tests -name "*.R" -exec R -f {} +
+
+      - name: Upload test files
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-files
+          path: objects
+
+  test-js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+ 
+      - name: Restore the node modules
+        uses: actions/cache@v3
+        with:
+          path: '**/node_modules'
+          key: modules-${{ hashFiles('**/package.json') }}
+
+      - name: Download test files
+        uses: actions/download-artifact@v3
+        with:
+          name: test-files
+          path: objects
+
+      - name: Install packages
+        run: npm i --include-dev
+
+      - name: Run tests
+        run: npm run test

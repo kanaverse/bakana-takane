@@ -1,6 +1,6 @@
 export function isPlaceholder(x, placeholder) {
     if (Number.isNaN(placeholder)) {
-        return Number.isnan(x);
+        return Number.isNaN(x);
     } else {
         return x == placeholder;
     }
