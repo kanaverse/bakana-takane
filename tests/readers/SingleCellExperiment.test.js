@@ -14,6 +14,7 @@ test("naked SCE loading works as expected", async () => {
     expect(sce.assay_names).toEqual(["counts"]);
     expect(sce.alternative_experiments).toEqual([]);
     expect(sce.reduced_dimension_names).toEqual([]);
+    expect(sce.main_experiment_name).toBeNull();
 })
 
 test("SCE loading works with base SEs", async () => {
@@ -28,6 +29,7 @@ test("full SCE loading works as expected", async () => {
 
     expect(sce.assay_names).toEqual(["counts", "logged"]);
     expect(sce.reduced_dimension_names).toEqual(["pca", "tsne"]);
+    expect(sce.main_experiment_name).toEqual("gene");
 
     expect(sce.alternative_experiments[0].name).toEqual("ERCC");
     expect(sce.alternative_experiments[0].experiment.assay_names).toEqual(["stuff"]);
