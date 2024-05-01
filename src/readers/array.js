@@ -36,16 +36,20 @@ export async function readDenseMatrix(path, navigator, { maxColumns = null } = {
         } else {
             nrow = dims[0];
             ncol = dims[1];
+            let usecol = ncol;
             if (maxColumns !== null && maxColumns < ncol) {
-                ncol = maxColumns;
+                usecol = maxColumns;
             }
-            for (var c = 0; c < ncol; c++) {
+
+            for (var c = 0; c < usecol; c++) {
                 let output = new contents.constructor(nrow);
                 for (var r = 0; r < nrow; r++) {
                     output[r] = contents[r * ncol + c];
                 }
                 acquired.push(output);
             }
+
+            ncol = usecol;
         }
 
         if ("missing-value-placeholder" in dhandle.attributes) {
