@@ -70,7 +70,13 @@ function parseJsonList(obj) {
         });
 
     } else if (obj.type == "number") {
-        const output = obj.values.map(x => {
+        let vals = obj.values;
+        const is_scalar = !(vals instanceof Array);
+        if (is_scalar) {
+            vals = [vals];
+        }
+
+        const output = vals.map(x => {
             if (typeof x != "string") {
                 return x;
             } else if (x == "Inf") {
@@ -81,14 +87,18 @@ function parseJsonList(obj) {
                 return Number.NaN;
             }
         });
-        if (output.indexOf(null) == -1) {
+        if (is_scalar) {
+            return output[0];
+        } else if (output.indexOf(null) == -1) {
             return new Float64Array(output);
         } else {
             return output;
         }
 
     } else if (obj.type == "integer") {
-        if (obj.values.indexOf(null) == -1) {
+        if (!(obj.values instanceof Array)) {
+            return obj.values;
+        } else if (obj.values.indexOf(null) == -1) {
             return new Int32Array(obj.values);
         } else {
             return obj.values;
@@ -134,17 +144,22 @@ function parseHdf5List(handle) {
 
         if (vectype == "string") {
             const vhandle = handle.open("data", { load: true });
+            let output = vhandle.values;
             if (vhandle.attributes.indexOf("missing-value-placeholder") >= 0) {
                 const placeholder = vhandle.readAttribute("missing-value-placeholder").values[0];
-                return vhandle.values.map(x => {
+                output = vhandle.values.map(x => {
                     if (x == placeholder) {
                         return null;
                     } else {
                         return x;
                     }
                 });
+            }
+
+            if (vhandle.shape.length == 0) {
+                return output[0];
             } else {
-                return vhandle.values;
+                return output;
             }
 
         } else if (vectype == "boolean") {
@@ -167,7 +182,11 @@ function parseHdf5List(handle) {
                 }
             }
 
-            return output;
+            if (vhandle.shape.length == 0) {
+                return output[0];
+            } else {
+                return output;
+            }
 
         } else if (vectype == "integer" || vectype == "number") {
             const vhandle = handle.open("data", { load: true });
@@ -182,7 +201,11 @@ function parseHdf5List(handle) {
                 }
             }
 
-            return output;
+            if (vhandle.shape.length == 0) {
+                return output[0];
+            } else {
+                return output;
+            }
 
         } else if (vectype == "factor") {
             const levels = handle.open("levels", { load: true }).values;

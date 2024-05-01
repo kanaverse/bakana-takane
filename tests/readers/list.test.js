@@ -49,3 +49,15 @@ test("list loading works with nesting", async () => {
     expect(nested_list_h5).toEqual(nested_list);
 })
 
+test("list loading works with scalars", async () => {
+    const scalar_list = await list.readSimpleList(path.join(PATH, "list-scalars", "js"), localNavigator);
+    expect(Object.keys(scalar_list)).toEqual(["strings", "integers", "numbers", "booleans"]);
+
+    expect(scalar_list["strings"]).toEqual("A");
+    expect(scalar_list["integers"]).toEqual(1);
+    expect(scalar_list["numbers"]).toEqual(2);
+    expect(scalar_list["booleans"]).toEqual(false);
+
+    const scalar_list_h5 = await list.readSimpleList(path.join(PATH, "list-scalars", "h5"), localNavigator);
+    expect(scalar_list_h5).toEqual(scalar_list);
+})
