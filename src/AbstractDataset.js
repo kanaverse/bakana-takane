@@ -1,6 +1,7 @@
 import { Navigator } from "./Navigator.js";
 import { readSingleCellExperiment } from "./readers/SingleCellExperiment.js";
 import { readAssay } from "./readers/SummarizedExperiment.js";
+import * as scran from "scran.js";
 
 function extractPrimaryIdColumn(modality, modality_features, primary) {
     if (!(modality in primary)) {
@@ -51,7 +52,7 @@ export class AbstractDataset {
             rnaCountAssay: 0, 
             adtCountAssay: 0, 
             crisprCountAssay: 0,
-            rnaExperiment: "", 
+            rnaExperiment: -1, 
             adtExperiment: "Antibody Capture", 
             crisprExperiment: "CRISPR Guide Capture",
             primaryRnaFeatureIdColumn: null, 
@@ -137,9 +138,11 @@ export class AbstractDataset {
         const assays = {};
         assays[main_name] = comp.assay_names;
 
-        for (const { name, experiment } of comp.alternative_experiments) {
-            features[name] = experiment.row_data;
-            assays[name] = experiment.assay_names;
+        if ("alternative_experiments" in comp) {
+            for (const { name, experiment } of comp.alternative_experiments) {
+                features[name] = experiment.row_data;
+                assays[name] = experiment.assay_names;
+            }
         }
 
         const output = {
@@ -155,7 +158,7 @@ export class AbstractDataset {
     }
 
     #get_main_name(comp) {
-        if (comp.main_experiment_name == null) {
+        if (!("main_experiment_name" in comp) || comp.main_experiment_name == null) {
             return "";
         } else {
             return comp.main_experiment_name;
@@ -186,8 +189,10 @@ export class AbstractDataset {
 
         const features = {};
         features[main_name] = comp.row_data;
-        for (const { name, experiment } of comp.alternative_experiments) {
-            features[name] = experiment.row_data;
+        if ("alternative_experiments" in comp) {
+            for (const { name, experiment } of comp.alternative_experiments) {
+                features[name] = experiment.row_data;
+            }
         }
 
         const fmapping = {
@@ -198,14 +203,14 @@ export class AbstractDataset {
         const primary_mapping = this.#get_primary_mapping();
 
         const preview = {};
-        for (const [f, m] of Object.entries(fmapping)) {
+        for (let [f, m] of Object.entries(fmapping)) {
             if (m === null) {
                 continue;
             }
             if (m < 0) {
                 m = main_name;
             }
-            if (mm in features) {
+            if (m in features) {
                 preview[f] = extractPrimaryIdColumn(f, features[m], primary_mapping);
             }
         }
@@ -251,11 +256,13 @@ export class AbstractDataset {
             ADT: { exp: this.#options.adtExperiment, assay: this.#options.adtCountAssay },
             CRISPR: { exp: this.#options.crisprExperiment, assay: this.#options.crisprCountAssay }
         };
-        const primary_mapping = this.#primary_mapping();
+        const primary_mapping = this.#get_primary_mapping();
 
         const altmap = {};
-        for (const { name, experiment } of comp.alternative_experiments.entries()) {
-            altmap[name] = experiment;
+        if ("alternative_experiments" in comp) {
+            for (const { name, experiment } of comp.alternative_experiments) {
+                altmap[name] = experiment;
+            }
         }
 
         try {
@@ -269,14 +276,14 @@ export class AbstractDataset {
                     if (v.exp === main_name) {
                         info = comp;
                     } else if (v.exp in altmap) {
-                        info = altmap[name];
+                        info = altmap[v.exp];
                     } else {
                         continue;
                     }
                 } else {
                     if (v.exp < 0) {
                         info = comp;
-                    } else if (v.exp < comp.alternative.length) {
+                    } else if ("alternative_experiments" in comp && v.exp < comp.alternative_experiments.length) {
                         info = comp.alternative_experiments[v.exp].experiment;
                     } else {
                         continue;

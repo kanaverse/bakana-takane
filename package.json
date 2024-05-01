@@ -30,6 +30,6 @@
     "docdash": "^2.0.1",
     "jest": "^29.7.0",
     "jsdoc": "^4.0.1",
-    "wasmarrays.js": "^0.1.0"
+    "bakana": "^3.0.1"
   }
 }
