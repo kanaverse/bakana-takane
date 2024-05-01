@@ -42,6 +42,7 @@ jobs:
 
   test-js:
     runs-on: ubuntu-latest
+    needs: setup-r
     steps:
       - uses: actions/checkout@v4
 
