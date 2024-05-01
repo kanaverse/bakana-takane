@@ -86,10 +86,11 @@ export async function readSingleCellExperiment(path, navigator, { includeColumnD
     return output;
 }
 
-export async function readReducedDimensions(path, navigator, { maxDimensions = 10 } = {}) {
-    const red_meta = await navigator.fetchObjectMetadata(path);
-    if (red_meta["type"] != "dense_array") {
-        throw new Error("reduced dimensions of type '" + red_meta["type"] + "' are not yet supported");
+export async function readReducedDimensions(path, name, navigator, { maxDimensions = 10 } = {}) {
+    const red_names = await navigator.fetchJson(path + "/reduced_dimensions/names.json");
+    const chosen = red_names.indexOf(name);
+    if (chosen < 0) {
+        throw new Error("cannot find reduced dimensions entry named '" + name + "'");
     }
-    return arr.readDenseMatrix(path, navigator, { maxColumns: maxDimensions });
+    return arr.readDenseMatrix(path + "/reduced_dimensions/" + String(chosen), navigator, { maxColumns: maxDimensions });
 }

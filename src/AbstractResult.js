@@ -1,6 +1,8 @@
 import { Navigator } from "./Navigator.js";
 import { readReducedDimensions, readSingleCellExperiment } from "./readers/SingleCellExperiment.js";
 import { readAssay } from "./readers/SummarizedExperiment.js";
+import * as scran from "scran.js";
+import * as bioc from "bioconductor";
 
 /**
  * Pre-computed analysis results stored as a SummarizedExperiment object (or one of its subclasses) in the * [**takane** format](https://github.com/ArtifactDB/takane).
@@ -86,7 +88,7 @@ export class AbstractResult {
     }
 
     #get_main_name(comp) {
-        if (comp.main_experiment_name == null) {
+        if (!("main_experiment_name" in comp) || comp.main_experiment_name == null) {
             return "";
         } else {
             return comp.main_experiment_name;
@@ -119,9 +121,11 @@ export class AbstractResult {
         const assays = {};
         assays[main_name] = comp.assay_names;
 
-        for (const { name, experiment } of comp.alternative_experiments) {
-            features[name] = experiment.row_data;
-            assays[name] = experiment.assay_names;
+        if ("alternative_experiments" in comp) {
+            for (const { name, experiment } of comp.alternative_experiments) {
+                features[name] = experiment.row_data;
+                assays[name] = experiment.assay_names;
+            }
         }
 
         let output = {
@@ -157,49 +161,36 @@ export class AbstractResult {
      */
     async load({ cache = false } = {}) {
         const comp = await this.#load_components();
+        const main_name = this.#get_main_name(comp);
 
         let output = { 
             matrix: new scran.MultiMatrix,
             features: {},
-            cells: comp.core.main.cells,
+            cells: comp.column_data,
             reduced_dimensions: {},
-            other_metadata: comp.other,
+            other_metadata: comp.metadata,
         };
 
-        // Fetch the reduced dimensions first.
-        {
+        if ("reduced_dimension_names" in comp) {
             let reddims = this.#options.reducedDimensionNames;
             if (reddims == null) {
                 reddims = comp.reduced_dimension_names;
             }
-
             if (reddims.length > 0) {
-                let redmap = {};
-                for (const [i, red] of comp.reduced_dimensions.entries()) {
-                    redmap[red.name] = red.path;
-                }
-
                 for (const k of reddims) {
-                    if (!(k in redmap)) {
-                        continue;
-                    }
-                    const red_path = redmap[k];
-
-                    let red_meta = await this.#navigator.get_object_file(red_path);
-                    if (red_meta["type"] != "dense_array") {
-                        console.warn("reduced dimensions of type '" + red_meta["type"] + "' are not yet supported");
-                        continue;
-                    }
-
-                    output.reduced_dimensions[k] = readReducedDimensions(red_path, navigator);
+                    output.reduced_dimensions[k] = (await readReducedDimensions(this.#path, k, this.#navigator)).values;
                 }
             }
         }
 
         // Now fetching the assay matrix.
         {
+            const my_assay = this.#options.primaryAssay;
+            const my_normalized = this.#options.isPrimaryNormalized;
+            const my_navigator = this.#navigator;
+
             async function add_experiment(name, info) {
-                let curassay = this.#options.primaryAssay;
+                let curassay = my_assay;
                 if (typeof curassay == "object") {
                     if (name in curassay) {
                         curassay = curassay[name];
@@ -208,7 +199,7 @@ export class AbstractResult {
                     }
                 }
 
-                let curnormalized = this.#options.isPrimaryNormalized;
+                let curnormalized = my_normalized;
                 if (typeof curnormalized == "object") {
                     if (name in curnormalized) {
                         curnormalized = curnormalized[name];
@@ -217,7 +208,7 @@ export class AbstractResult {
                     }
                 }
 
-                let loaded = await readAssay(info["_path"], curassay, this.#navigator);
+                let loaded = await readAssay(info["_path"], curassay, my_navigator);
                 output.matrix.add(name, loaded);
                 if (!curnormalized) {
                     let normed = scran.logNormCounts(loaded, { allowZeros: true });
@@ -229,8 +220,10 @@ export class AbstractResult {
 
             try {
                 await add_experiment(main_name, comp);
-                for (const { name, experiment } of comp.alternative_experiments) {
-                    await add_experiment(name, experiment);
+                if ("alternative_experiments" in comp) {
+                    for (const { name, experiment } of comp.alternative_experiments) {
+                        await add_experiment(name, experiment);
+                    }
                 }
             } catch (e) {
                 scran.free(output.matrix);

@@ -49,7 +49,7 @@ test("partial SCE loading works as expected", async () => {
 })
 
 test("reduced dimension loading works as expected", async () => {
-    const red = await scex.readReducedDimensions(path.join(PATH, "SingleCellExperiment-full", "reduced_dimensions", "0"), localNavigator)
+    const red = await scex.readReducedDimensions(path.join(PATH, "SingleCellExperiment-full"), "pca", localNavigator)
     expect(red.rows).toEqual(5);
     expect(red.columns).toEqual(6);
     expect(red.values.length).toEqual(red.columns);
@@ -57,7 +57,7 @@ test("reduced dimension loading works as expected", async () => {
     expect(red.values[0] instanceof Float64Array).toBe(true);
     expect(red.values[0]).not.toEqual(red.values[1]);
 
-    const red2 = await scex.readReducedDimensions(path.join(PATH, "SingleCellExperiment-full", "reduced_dimensions", "1"), localNavigator, { maxDimensions: 2 })
+    const red2 = await scex.readReducedDimensions(path.join(PATH, "SingleCellExperiment-full"), "tsne", localNavigator, { maxDimensions: 2 })
     expect(red2.rows).toEqual(5);
     expect(red2.columns).toEqual(2);
     expect(red2.values.length).toEqual(2);
