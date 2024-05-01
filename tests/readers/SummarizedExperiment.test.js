@@ -39,3 +39,16 @@ test("partial SE loading works as expected", async () => {
     expect("column_data" in se).toBe(false);
     expect("metadata" in se).toBe(false);
 })
+
+test("assay loading works as expected", async () => {
+    const ass = await sex.readAssay(path.join(PATH, "SummarizedExperiment-full"), "counts", localNavigator);
+    expect(ass.numberOfRows()).toEqual(20);
+    expect(ass.numberOfColumns()).toEqual(5);
+    expect(ass.column(0)[0]).toBeGreaterThan(0);
+
+    // Works with indices.
+    const ass2 = await sex.readAssay(path.join(PATH, "SummarizedExperiment-full"), 1, localNavigator);
+    expect(ass2.numberOfRows()).toEqual(20);
+    expect(ass2.numberOfColumns()).toEqual(5);
+    expect(ass2.column(1)).not.toEqual(ass.column(1));
+})

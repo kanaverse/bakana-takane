@@ -86,15 +86,11 @@ export async function readSparseMatrix(path, navigator, { forceInteger = false }
 
             // Checking for missing value placeholders.
             const vhandle = dhandle.open("data");
-            if ("missing-value-placeholder" in vhandle) {
+            if (vhandle.attributes.indexOf("missing-value-placeholder") != -1) {
                 throw new Error("missing values in the dense array are not yet supported");
             }
 
-            output = scran.initializeSparseMatrixFromHdf5(realized.path, "dense_array/data", { transposed: is_trans, forceInteger });
-            if (!is_trans) {
-                scran.transpose(output, { inPlace: true });
-            }
-
+            output = scran.initializeSparseMatrixFromHdf5DenseArray(realized.path, "dense_array/data", { transposed: is_trans, forceInteger });
         } finally {
             realized.flush();
         }
@@ -103,7 +99,18 @@ export async function readSparseMatrix(path, navigator, { forceInteger = false }
         const contents = await navigator.get(path + "/matrix.h5");
         const realized = scran.realizeFile(contents);
         try {
-            output = scran.initializeSparseMatrixFromHdf5(realized.path, name, { forceInteger });
+            const fhandle = new scran.H5File(realized.path);
+            const dhandle = fhandle.open("compressed_sparse_matrix");
+            const shape = dhandle.open("shape", { load: true }).values;
+            const layout = dhandle.readAttribute("layout").values[0];
+
+            // Checking for missing value placeholders.
+            const vhandle = dhandle.open("data");
+            if (vhandle.attributes.indexOf("missing-value-placeholder") != -1) {
+                throw new Error("missing values in the sparse matrix are not yet supported");
+            }
+
+            output = scran.initializeSparseMatrixFromHdf5SparseMatrix(realized.path, "compressed_sparse_matrix", shape[0], shape[1], layout == "CSC", { forceInteger });
         } finally {
             realized.flush();
         }

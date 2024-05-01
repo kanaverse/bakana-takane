@@ -71,7 +71,7 @@ export async function readAssay(path, assay, navigator) {
         }
     }
 
-    return arr.readSparseMatrix(path + "/assays/" + String(assay), navigator, forceInteger);
+    return arr.readSparseMatrix(path + "/assays/" + String(assay), navigator);
 }
 
 export async function readSummarizedExperiment(path, navigator, { includeColumnData = true, includeMetadata = true } = {}) {
