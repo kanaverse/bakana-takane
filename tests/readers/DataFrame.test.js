@@ -12,6 +12,7 @@ test("basic data frame loading works as expected", async () => {
     const basic_df = await df.readDataFrame(path.join(PATH, "DataFrame-basic"), localNavigator);
     expect(basic_df.columnNames()).toEqual(["strings", "integers", "numbers", "booleans", "factors" ]);
     expect(basic_df.numberOfRows()).toEqual(26);
+    expect(basic_df.rowNames()).toBeNull();
 
     const strcol = basic_df.column("strings");
     expect(strcol instanceof Array).toBe(true);
@@ -38,6 +39,13 @@ test("basic data frame loading works as expected", async () => {
     expect(faccol[0]).toBe("a");
     expect(faccol[25]).toBe("z");
 });
+
+test("data frame loading works with row names", async () => {
+    const basic_df = await df.readDataFrame(path.join(PATH, "DataFrame-named"), localNavigator);
+    expect(basic_df.columnNames()).toEqual(["A", "B"]);
+    expect(basic_df.numberOfRows()).toEqual(5);
+    expect(basic_df.rowNames()).toEqual(["GENE1", "GENE2", "GENE3", "GENE4", "GENE5"]);
+})
 
 test("data frame loading works with missing values", async () => {
     const missing_df = await df.readDataFrame(path.join(PATH, "DataFrame-missing"), localNavigator);

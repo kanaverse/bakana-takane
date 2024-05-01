@@ -18,6 +18,15 @@ library(S4Vectors)
 }
 
 {
+    df <- DataFrame(A = 1:5, B = letters[1:5])
+    rownames(df) <- paste0("GENE", 1:5) 
+
+    path <- file.path(PATH, "DataFrame-named")
+    unlink(path, recursive=TRUE)
+    saveObject(df, path)
+}
+
+{
     df <- DataFrame(
         strings = LETTERS,
         integers = 1:26,
