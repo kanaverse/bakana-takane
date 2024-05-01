@@ -2,7 +2,7 @@ import * as scran from "scran.js";
 import * as utils from "./utils.js";
 
 function isDenseArrayTransposed(handle) {
-    if (!("transposed" in handle.attributes)) {
+    if (handle.attributes.indexOf("transposed") == -1) {
         return false;
     }
     const trans = handle.readAttribute("transposed").values[0];
@@ -10,7 +10,7 @@ function isDenseArrayTransposed(handle) {
 }
 
 export async function readDenseMatrix(path, navigator, { maxColumns = null } = {}) {
-    const contents = await this.#navigator.get(path + "/array.h5");
+    const contents = await navigator.get(path + "/array.h5");
     const realized = scran.realizeFile(contents);
     const acquired = [];
     let nrow, ncol;

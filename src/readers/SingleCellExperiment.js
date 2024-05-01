@@ -1,8 +1,9 @@
 import * as scran from "scran.js";
 import * as se from "./SummarizedExperiment.js";
+import * as arr from "./array.js";
 import * as utils from "./utils.js";
 
-async function getMainExperimentName(obj_info) {
+function getMainExperimentName(obj_info) {
     const sce_meta = obj_info.single_cell_experiment;
     if ("main_experiment_name" in sce_meta) {
         return sce_meta.main_experiment_name;
@@ -19,7 +20,7 @@ async function readAlternativeExperiments(path, obj_info, listing, navigator) {
     const tasks = [];
     for (const [i, alt] of altnames.entries()) {
         let alt_path = path + "/alternative_experiments/" + String(i);
-        tasks.push(se.readSummarizedExperiment(alt_path, navigator, { includeColumnData: false, includeMetadata: false });
+        tasks.push(se.readSummarizedExperiment(alt_path, navigator, { includeColumnData: false, includeMetadata: false }));
     }
 
     const alternatives = [];
@@ -44,16 +45,16 @@ async function getReducedDimensionNames(path, obj_info, listing, navigator) {
     const tasks = []; 
 
     // Only supporting dense_arrays in the reduced dimensions for now.
-    for (const [i, r] of all_rd_names.entries()) {
+    for (var i = 0; i < all_rd_names.length; i++) {
         const red_path = path + "/reduced_dimensions/" + String(i);
         tasks.push(navigator.fetchObjectMetadata(red_path));
     }
 
     const output = [];
     const resolved = await Promise.all(tasks);
-    for (const { type } of resolved) {
-        if (type == "dense_array") { 
-            output.push(r);
+    for (const [i, meta] of resolved.entries()) {
+        if (meta.type == "dense_array") { 
+            output.push(all_rd_names[i]);
         }
     }
 
@@ -61,17 +62,17 @@ async function getReducedDimensionNames(path, obj_info, listing, navigator) {
 }
 
 export async function readSingleCellExperiment(path, navigator, { includeColumnData = true, includeMetadata = true, includeReducedDimensionNames = true } = {}) {
-    const output = se.readSummarizedExperiment(path, navigator, { includeColumnData, includeMetadata });
+    const output = await se.readSummarizedExperiment(path, navigator, { includeColumnData, includeMetadata });
 
     const obj_info = await navigator.fetchObjectMetadata(path);
-    if (!("single_cell_experiment" in obj_info)) {
+    if ("single_cell_experiment" in obj_info) {
         const listing = await navigator.listFiles(path);
         const tasks = [
             getMainExperimentName(obj_info),
             readAlternativeExperiments(path, obj_info, listing, navigator)
         ];
         if (includeReducedDimensionNames) {
-            tasks.push(getReducedDimensionNames(path, obj_info, listing, navigator);
+            tasks.push(getReducedDimensionNames(path, obj_info, listing, navigator));
         }
 
         const resolved = await Promise.all(tasks);
@@ -86,9 +87,9 @@ export async function readSingleCellExperiment(path, navigator, { includeColumnD
 }
 
 export async function readReducedDimensions(path, navigator, { maxDimensions = 10 } = {}) {
-    const red_meta = await navigator.get_object_file(path);
+    const red_meta = await navigator.fetchObjectMetadata(path);
     if (red_meta["type"] != "dense_array") {
         throw new Error("reduced dimensions of type '" + red_meta["type"] + "' are not yet supported");
     }
-    return readDenseMatrix(path, navigator, { maxColumns: maxDimensions });
+    return arr.readDenseMatrix(path, navigator, { maxColumns: maxDimensions });
 }

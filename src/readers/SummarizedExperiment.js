@@ -1,4 +1,4 @@
-import * as bioc from "bioconductor.js";
+import * as bioc from "bioconductor";
 import * as df from "./DataFrame.js";
 import * as arr from "./array.js";
 import * as sl from "./list.js";
@@ -46,9 +46,9 @@ async function getAssayNames(path, listing, navigator) {
     // Only reporting the names of assays with supported types.
     const assnames = await navigator.fetchJson(path + "/assays/names.json");
     const collected = [];
-    for (const [i, a] of assnames) {
+    for (const [i, a] of assnames.entries()) {
         const assmeta = await navigator.fetchObjectMetadata(path + "/assays/" + String(i));
-        if (arr.isArraySupportedAsScranMatrix(assmeta.type);
+        if (arr.isArraySupportedAsScranMatrix(assmeta.type)) {
             collected.push(a);
         }
     }
@@ -79,7 +79,7 @@ export async function readSummarizedExperiment(path, navigator, { includeColumnD
     const listing = await navigator.listFiles(path);
     const tasks = [
         readRowData(path, obj_info, listing, navigator),
-        getAssayNames(path, listing, path)
+        getAssayNames(path, listing, navigator)
     ];
 
     if (includeColumnData) {
