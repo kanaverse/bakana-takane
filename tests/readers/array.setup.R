@@ -31,6 +31,14 @@ library(S4Vectors)
 }
 
 {
+    path <- file.path(PATH, "dense_matrix-missing")
+    unlink(path, recursive=TRUE)
+    y <- matrix(1:50, ncol=5)
+    y[25] <- NA
+    saveObject(y, path)
+}
+
+{
     path <- file.path(PATH, "sparse_matrix-integer-csc")
     unlink(path, recursive=TRUE)
     mat <- matrix(0L, nrow=10, ncol=5)
@@ -43,6 +51,14 @@ library(S4Vectors)
     unlink(path, recursive=TRUE)
     mat <- matrix(0L, nrow=10, ncol=5)
     mat[cbind((1:5)*2, 1:5)] <- 1:5 / 2
+    saveObject(as(mat, "SVT_SparseMatrix"), path)
+}
+
+{
+    path <- file.path(PATH, "sparse_matrix-missing")
+    unlink(path, recursive=TRUE)
+    mat <- matrix(0L, nrow=10, ncol=5)
+    mat[cbind((1:5)*2, 1:5)] <- NA
     saveObject(as(mat, "SVT_SparseMatrix"), path)
 }
 

@@ -42,6 +42,16 @@ test("dense matrix loading works with capped dimensions", async () => {
     expect(nmat.values[1]).toEqual(new Uint8Array([2,12,22,32,42]));
 })
 
+test("dense matrix loading handles missing values", async () => {
+    const mat = await arr.readDenseMatrix(path.join(PATH, "dense_matrix-missing"), localNavigator);
+    expect(mat.rows).toEqual(10);
+    expect(mat.columns).toEqual(5);
+    expect(mat.values.length).toEqual(mat.columns);
+    expect(mat.values[0]).toEqual(new Uint8Array([1,2,3,4,5,6,7,8,9,10]));
+    expect(mat.values[2]).toEqual([21,22,23,24,null,26,27,28,29,30]);
+    expect(mat.values[4]).toEqual(new Uint8Array([41,42,43,44,45,46,47,48,49,50]));
+})
+
 test("sparse matrix loading works correctly on dense inputs", async () => {
     const mat = await arr.readSparseMatrix(path.join(PATH, "dense_matrix-basic"), localNavigator);
     expect(mat.numberOfRows()).toBe(10);
@@ -133,4 +143,9 @@ test("sparse matrix loading works with CSR matrices", async () => {
     let last_ref = new Float64Array(5);
     last_ref[4] = 5/2;
     expect(mat.column(9)).toEqual(last_ref);
+})
+
+test("sparse matrix loading fails for missing values", async () => {
+    await expect(arr.readSparseMatrix(path.join(PATH, "sparse_matrix-missing"), localNavigator)).rejects.toThrow("missing values");
+    await expect(arr.readSparseMatrix(path.join(PATH, "dense_matrix-missing"), localNavigator)).rejects.toThrow("missing values");
 })

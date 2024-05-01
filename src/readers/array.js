@@ -52,7 +52,7 @@ export async function readDenseMatrix(path, navigator, { maxColumns = null } = {
             ncol = usecol;
         }
 
-        if ("missing-value-placeholder" in dhandle.attributes) {
+        if (dhandle.attributes.indexOf("missing-value-placeholder") >= 0) {
             const placeholder = dhandle.readAttribute("missing-value-placeholder").values[0];
             for (const [i, x] of acquired.entries()) {
                 acquired[i] = utils.substitutePlaceholder(x, placeholder);
