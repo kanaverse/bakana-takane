@@ -24,10 +24,12 @@ library(SingleCellExperiment)
     reducedDim(full, "tsne") <- matrix(rnorm(20), nrow=ncol(full))
 
     ercc <- SummarizedExperiment(list(stuff=matrix(rpois(40, lambda=1), ncol=ncol(full))))
+    ercc$foo <- "bar"
     rownames(ercc) <- head(letters, nrow(ercc))
     altExp(full, "ERCC", withDimnames=FALSE) <- ercc
 
     sirv <- SummarizedExperiment(list(stuff=matrix(rpois(20, lambda=1), ncol=ncol(full))))
+    metadata(sirv)$whee <- "blah"
     rownames(sirv) <- paste0("SIRV", seq_len(nrow(sirv)))
     altExp(full, "SIRV", withDimnames=FALSE) <- sirv 
 

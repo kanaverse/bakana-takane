@@ -11,7 +11,16 @@ function getMainExperimentName(obj_info) {
     return null;
 }
 
-async function readAlternativeExperiments(path, obj_info, listing, navigator) {
+async function readAlternativeExperiments(
+    path, 
+    obj_info, 
+    listing, 
+    navigator, 
+    { 
+        includeAlternativeExperimentColumnData = true, 
+        includeAlternativeExperimentMetadata = false,
+    } = {})
+{
     if (listing.indexOf("alternative_experiments") == -1) {
         return [];
     }
@@ -20,7 +29,14 @@ async function readAlternativeExperiments(path, obj_info, listing, navigator) {
     const tasks = [];
     for (const [i, alt] of altnames.entries()) {
         let alt_path = path + "/alternative_experiments/" + String(i);
-        tasks.push(se.readSummarizedExperiment(alt_path, navigator, { includeColumnData: false, includeMetadata: false }));
+        tasks.push(se.readSummarizedExperiment(
+            alt_path, 
+            navigator,
+            { 
+                includeColumnData: includeAlternativeExperimentColumnData,
+                includeMetadata: includeAlternativeExperimentMetadata,
+            }
+        ));
     }
 
     const alternatives = [];
@@ -61,16 +77,37 @@ async function getReducedDimensionNames(path, obj_info, listing, navigator) {
     return output;
 }
 
-export async function readSingleCellExperiment(path, navigator, { includeColumnData = true, includeMetadata = true, includeReducedDimensionNames = true } = {}) {
+export async function readSingleCellExperiment(
+    path, 
+    navigator, 
+    { 
+        includeColumnData = true, 
+        includeMetadata = true, 
+        includeReducedDimensionNames = true, 
+        includeAlternativeExperiments = true,
+        includeAlternativeExperimentColumnData = false,
+        includeAlternativeExperimentMetadata = false,
+    } = {}) 
+{
     const output = await se.readSummarizedExperiment(path, navigator, { includeColumnData, includeMetadata });
 
     const obj_info = await navigator.fetchObjectMetadata(path);
     if ("single_cell_experiment" in obj_info) {
         const listing = await navigator.listFiles(path);
-        const tasks = [
-            getMainExperimentName(obj_info),
-            readAlternativeExperiments(path, obj_info, listing, navigator)
-        ];
+        const tasks = [ getMainExperimentName(obj_info) ];
+
+        if (includeAlternativeExperiments) {
+            tasks.push(readAlternativeExperiments(
+                path,
+                obj_info,
+                listing, 
+                navigator, 
+                { 
+                    includeAlternativeExperimentColumnData, 
+                    includeAlternativeExperimentMetadata 
+                }
+            ));
+        }
         if (includeReducedDimensionNames) {
             tasks.push(getReducedDimensionNames(path, obj_info, listing, navigator));
         }

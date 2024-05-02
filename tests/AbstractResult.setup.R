@@ -4,16 +4,16 @@ dir.create(PATH, showWarnings=FALSE)
 library(SingleCellExperiment)
 
 {
-    full <- SingleCellExperiment(list(counts=matrix(runif(100) * 100, 20, 5), logged=matrix(100 + runif(100) * 20, 20, 5)))
+    full <- SingleCellExperiment(list(counts=matrix(100 + runif(100), 20, 5), logged=matrix(-runif(100), 20, 5)))
     rownames(full) <- LETTERS[1:20]
     rowData(full)$Symbol <- letters[1:20]
     full$treatment <- rep(c(TRUE, FALSE), length.out=ncol(full))
 
-    spike <- SummarizedExperiment(list(stuff=matrix(rpois(40, lambda=1), ncol=ncol(full))))
+    spike <- SummarizedExperiment(list(stuff=matrix(100 + rpois(40, lambda=1), ncol=ncol(full))))
     rownames(spike) <- paste0("SPIKE", seq_len(nrow(spike)))
     altExp(full, "spikes", withDimnames=FALSE) <- spike
 
-    adt <- SummarizedExperiment(list(foobar=matrix(rpois(20, lambda=1), ncol=ncol(full))))
+    adt <- SummarizedExperiment(list(foobar=matrix(100 + rpois(20, lambda=1), ncol=ncol(full))))
     rownames(adt) <- paste0("ADT", seq_len(nrow(adt)))
     altExp(full, "adt", withDimnames=FALSE) <- adt 
 
@@ -28,7 +28,7 @@ library(SingleCellExperiment)
 }
 
 {
-    full <- SingleCellExperiment(list(counts=matrix(runif(100) * 100, 20, 5)))
+    full <- SingleCellExperiment(list(counts=matrix(runif(100), 20, 5)))
     rownames(full) <- LETTERS[1:20]
     rowData(full)$Symbol <- letters[1:20]
     full$treatment <- rep(c(TRUE, FALSE), length.out=ncol(full))
@@ -48,12 +48,33 @@ library(SingleCellExperiment)
 }
 
 {
-    full <- SummarizedExperiment(list(counts=matrix(runif(100) * 100, 20, 5) + 100))
+    full <- SummarizedExperiment(list(counts=matrix(runif(100), 20, 5)))
     rownames(full) <- tail(LETTERS, 20)
     rowData(full)$Symbol <- paste0(letters[1:20], "_X")
     full$treatment <- rep(c(TRUE, FALSE), length.out=ncol(full))
 
     path <- file.path(PATH, "AbstractResult-se")
+    unlink(path, recursive=TRUE)
+    saveObject(full, path)
+}
+
+{
+    full <- SingleCellExperiment(list(counts=matrix(runif(100), 20, 5)))
+    rownames(full) <- LETTERS[1:20]
+
+    tmp <- full
+    tmp$sizeFactors <- runif(5)
+    altExp(full, "ercc", withDimnames=FALSE) <- tmp 
+
+    tmp <- full
+    tmp$size_factors <- letters[1:5]
+    altExp(full, "sirv", withDimnames=FALSE) <- tmp 
+
+    tmp <- full
+    tmp$size_factor <- runif(5)
+    altExp(full, "adt", withDimnames=FALSE) <- tmp 
+
+    path <- file.path(PATH, "AbstractResult-sf")
     unlink(path, recursive=TRUE)
     saveObject(full, path)
 }

@@ -36,7 +36,8 @@ export class AbstractResult {
         return { 
             primaryAssay: 0,
             isPrimaryNormalized: true,
-            reducedDimensionNames: null
+            reducedDimensionNames: null,
+            sizeFactors: true,
         };
     }
 
@@ -55,12 +56,25 @@ export class AbstractResult {
      * - If a number, this is used as the index of the assay across all modalities.
      * - If any object, the key should be the name of a modality and the value may be either a string or number specifying the assay to use for that modality.
      *   Modalities absent from this object will not be loaded.
-     * @param {object|boolean} [options.isPrimaryNormalized] - Whether or not the assay for a particular modality has already been normalized.
+     * @param {object|boolean} [options.isPrimaryNormalized] - Whether or not the assay for a particular modality has already been log-normalized.
      *
      * - If a boolean, this is used to indicate normalization status of assays across all modalities.
-     *   If `false`, that modality's assay is assumed to contain count data and is subjected to library size normalization. 
-     * - If any object, the key should be the name of a modality and the value should be a boolean indicating whether that modality's assay has been normalized.
+     *   If `false`, that modality's assay is assumed to contain count data and is subjected to scaling normalization and log-transformation.
+     * - If any object, the key should be the name of a modality and the value should be a boolean indicating whether that modality's assay has been log-normalized.
      *   Modalities absent from this object are assumed to have been normalized.
+     * @param {object|string|boolean} [options.sizeFactors] - What size factors to use for scaling normalization.
+     *
+     * - If `false`, the library size (i.e., total sum of counts) is used to normalize each assay.
+     *   No size factors are used from the column data of any experiment.
+     * - If `true`, each experiment's column data is searched for the `sizefactor`, `size_factor`, `sizefactors` or `size_factors` columns (ignoring any case).
+     *   If found and the column contains only numeric values, it is used to supply the size factors.
+     *   Otherwise, the library sizes are used.
+     * - If a string, the column of the same name is assumed to store the size factors for each experiment.
+     *   If no column exists with this name, the library sizes are used.
+     * - If an object, the key should be the name of a modality and the value should be a boolean or string specifying the size factors to use for that modality based on the points mentioned above.
+     *   For any modality absent from this object, the value is assumed to be `true`.
+     * 
+     * Note that this option only has an effect on the assays that need log-normalization, according to `isPrimaryNormalized`.
      * @param {?Array} [options.reducedDimensionNames] - Array of names of the reduced dimensions to load.
      * If `null`, all reduced dimensions found in the file are loaded.
      */
@@ -82,7 +96,7 @@ export class AbstractResult {
 
     async #load_components() {
         if (this.#raw_components === null) {
-            this.#raw_components = readSingleCellExperiment(this.#path, this.#navigator);
+            this.#raw_components = readSingleCellExperiment(this.#path, this.#navigator, { includeAlternativeExperimentColumnData: true });
         }
         return this.#raw_components;
     }
@@ -187,7 +201,9 @@ export class AbstractResult {
         {
             const my_assay = this.#options.primaryAssay;
             const my_normalized = this.#options.isPrimaryNormalized;
+            const my_sf = this.#options.sizeFactors;
             const my_navigator = this.#navigator;
+            const allowed_names = new Set([ "sizefactor", "size_factor", "sizefactors", "size_factors" ]);
 
             async function add_experiment(name, info) {
                 let curassay = my_assay;
@@ -208,10 +224,45 @@ export class AbstractResult {
                     }
                 }
 
+                let cursf = my_sf;
+                if (typeof cursf == "object") {
+                    if (name in cursf) {
+                        cursf = cursf[name];
+                    } else {
+                        cursf = true;
+                    }
+                }
+
                 let loaded = await readAssay(info["_path"], curassay, my_navigator);
                 output.matrix.add(name, loaded);
+
                 if (!curnormalized) {
-                    let normed = scran.logNormCounts(loaded, { allowZeros: true });
+                    let fac = null; 
+                    if (typeof cursf == "string") {
+                        if (info.column_data.hasColumn(cursf)) {
+                            fac = info.column_data.column(cursf);
+                        }
+                    } else if (cursf) {
+                        const allcols = info.column_data.columnNames();
+                        for (const n of allcols) {
+                            const nl = n.toLowerCase();
+                            if (allowed_names.has(nl)) {
+                                fac = info.column_data.column(n);
+                                break;
+                            }
+                        }
+                    }
+
+                    if (fac instanceof Array) {
+                        for (const x of fac) {
+                            if (typeof x != "number") {
+                                fac = null;
+                                break;
+                            }
+                        }
+                    }
+
+                    let normed = scran.logNormCounts(loaded, { allowZeros: true, sizeFactors: fac });
                     output.matrix.add(name, normed);
                 }
 

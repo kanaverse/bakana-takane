@@ -106,19 +106,19 @@ test("AbstractResult recognises the assay options", async () => {
     const thing = new LocalResult(path.join(PATH, "AbstractResult-basic"));
     let init = await thing.load();
     expect(init.matrix.available()).toEqual(["", "spikes", "adt"]);
-    expect(init.matrix.get("").column(0).every(x => (x >= 0 && x < 100))).toBe(true);
+    expect(init.matrix.get("").column(0).every(x => x >= 100)).toBe(true);
     init.matrix.free();
 
     thing.setOptions({ primaryAssay: { "": 1 } });
     init = await thing.load();
     expect(init.matrix.available()).toEqual([""]);
-    expect(init.matrix.get("").column(0).every(x => (x >= 100 && x < 120))).toBe(true);
+    expect(init.matrix.get("").column(0).every(x => x <= 0)).toBe(true);
     init.matrix.free();
 
     thing.setOptions({ primaryAssay: { "": "logged", "spikes": "stuff", "adt": 0 } });
     init = await thing.load();
     expect(init.matrix.available()).toEqual(["", "spikes", "adt"]);
-    expect(init.matrix.get("").column(0).every(x => (x >= 100 && x < 120))).toBe(true);
+    expect(init.matrix.get("").column(0).every(x => x <= 0)).toBe(true);
     init.matrix.free();
 
     thing.setOptions({ primaryAssay: "counts" });
@@ -129,20 +129,50 @@ test("AbstractResult recognises the normalization options", async () => {
     const thing = new LocalResult(path.join(PATH, "AbstractResult-basic"));
     let init = await thing.load();
     expect(init.matrix.available()).toEqual(["", "spikes", "adt"]);
-    let refcol = init.matrix.get("").column(0);
+    expect(init.matrix.get("").column(0).every(x => x >= 100)).toBe(true)
     init.matrix.free();
 
     // Everyone now gets log-transformed.
     thing.setOptions({ isPrimaryNormalized: false });
     init = await thing.load();
-    expect(init.matrix.get("").column(0).every(x => x < 10)).toBe(true)
-    expect(init.matrix.get("spikes").column(0).every(x => x < 10)).toBe(true)
+    expect(init.matrix.get("").column(0).every(x => x < 100)).toBe(true)
+    expect(init.matrix.get("spikes").column(0).every(x => x < 100)).toBe(true)
     init.matrix.free();
 
     // Only some people are log-transformed.
     thing.setOptions({ isPrimaryNormalized: { "": true, "spikes": false } });
     init = await thing.load();
-    expect(init.matrix.get("").column(0)).toEqual(refcol);
-    expect(init.matrix.get("spikes").column(0).every(x => x < 10)).toBe(true)
+    expect(init.matrix.get("").column(0).every(x => x >= 100)).toBe(true)
+    expect(init.matrix.get("spikes").column(0).every(x => x < 100)).toBe(true)
+    init.matrix.free();
+})
+
+test("AbstractResult recognises the size factor options", async () => {
+    const thing = new LocalResult(path.join(PATH, "AbstractResult-sf"));
+    thing.setOptions({ isPrimaryNormalized: false });
+
+    let init = await thing.load();
+    const vals = init.matrix.get("").column(0);
+    expect(init.matrix.get("ercc").column(0)).not.toEqual(vals);
+    expect(init.matrix.get("sirv").column(0)).toEqual(vals); // ignoring non-numeric size factors.
+    expect(init.matrix.get("adt").column(0)).not.toEqual(vals);
+    init.matrix.free();
+
+    thing.setOptions({ sizeFactors: false }); // ignore size factors.
+    init = await thing.load();
+    expect(init.matrix.get("ercc").column(0)).toEqual(vals);
+    expect(init.matrix.get("adt").column(0)).toEqual(vals);
+    init.matrix.free();
+
+    thing.setOptions({ sizeFactors: "size_factor" }); // specific name.
+    init = await thing.load();
+    expect(init.matrix.get("ercc").column(0)).toEqual(vals);
+    expect(init.matrix.get("adt").column(0)).not.toEqual(vals);
+    init.matrix.free();
+
+    thing.setOptions({ sizeFactors: { ercc: "sizeFactors", adt: "size_factor" } });
+    init = await thing.load();
+    expect(init.matrix.get("ercc").column(0)).not.toEqual(vals);
+    expect(init.matrix.get("adt").column(0)).not.toEqual(vals);
     init.matrix.free();
 })

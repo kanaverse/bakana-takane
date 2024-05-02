@@ -35,11 +35,13 @@ test("full SCE loading works as expected", async () => {
     expect(sce.alternative_experiments[0].experiment.assay_names).toEqual(["stuff"]);
     expect(sce.alternative_experiments[0].experiment.row_data.numberOfRows()).toEqual(8);
     expect(sce.alternative_experiments[0].experiment.row_data.rowNames()[0]).toEqual("a");
+    expect("column_data" in sce.alternative_experiments[0].experiment).toBe(false);
 
     expect(sce.alternative_experiments[1].name).toEqual("SIRV");
     expect(sce.alternative_experiments[1].experiment.assay_names).toEqual(["stuff"]);
     expect(sce.alternative_experiments[1].experiment.row_data.numberOfRows()).toEqual(4);
     expect(sce.alternative_experiments[1].experiment.row_data.rowNames()[0]).toEqual("SIRV1");
+    expect("metadata" in sce.alternative_experiments[1].experiment).toBe(false);
 })
 
 test("partial SCE loading works as expected", async () => {
@@ -48,6 +50,12 @@ test("partial SCE loading works as expected", async () => {
     expect("column_data" in sce).toBe(false);
     expect("metadata" in sce).toBe(false);
     expect(sce.assay_names).toEqual(["counts", "logged"]);
+})
+
+test("SCE loading works with altexp details", async () => {
+    const sce = await scex.readSingleCellExperiment(path.join(PATH, "SingleCellExperiment-full"), localNavigator, { includeAlternativeExperimentColumnData: true, includeAlternativeExperimentMetadata: true })
+    expect(sce.alternative_experiments[0].experiment.column_data.hasColumn("foo")).toBe(true);
+    expect(sce.alternative_experiments[1].experiment.metadata["whee"]).toEqual(["blah"]);
 })
 
 test("reduced dimension loading works as expected", async () => {
