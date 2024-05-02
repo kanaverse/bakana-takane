@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>Home - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <input type="text" id="nav-search" placeholder="Search" />
+    
+    
+    <h2><a href="index.html">Home</a></h2><h2><a href="https://github.com/LTLA/bakana" target="_blank" class="menu-item" id="repository" >Github repo</a></h2><h3>Classes</h3><ul><li><a href="AbstractDataset.html">AbstractDataset</a><ul class='methods'><li data-type='method' style='display: none;'><a href="AbstractDataset.html#clear">clear</a></li><li data-type='method' style='display: none;'><a href="AbstractDataset.html#load">load</a></li><li data-type='method' style='display: none;'><a href="AbstractDataset.html#options">options</a></li><li data-type='method' style='display: none;'><a href="AbstractDataset.html#previewPrimaryIds">previewPrimaryIds</a></li><li data-type='method' style='display: none;'><a href="AbstractDataset.html#setOptions">setOptions</a></li><li data-type='method' style='display: none;'><a href="AbstractDataset.html#summary">summary</a></li><li data-type='method' style='display: none;'><a href="AbstractDataset.html#.defaults">defaults</a></li></ul></li><li><a href="AbstractResult.html">AbstractResult</a><ul class='methods'><li data-type='method' style='display: none;'><a href="AbstractResult.html#clear">clear</a></li><li data-type='method' style='display: none;'><a href="AbstractResult.html#load">load</a></li><li data-type='method' style='display: none;'><a href="AbstractResult.html#options">options</a></li><li data-type='method' style='display: none;'><a href="AbstractResult.html#setOptions">setOptions</a></li><li data-type='method' style='display: none;'><a href="AbstractResult.html#summary">summary</a></li><li data-type='method' style='display: none;'><a href="AbstractResult.html#.defaults">defaults</a></li></ul></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+
+    
+
+
+
+    
+
+
+    <section class="package">
+        <h3> </h3>		
+    </section>
+
+
+
+
+
+
+
+
+
+    
+
+
+
+    <section class="readme usertext">
+        <article><h1>bakana extension for takane formats</h1>
+<p>Implements <a href="https://github.com/kanaverse/bakana"><strong>bakana</strong>-compatible</a> readers for <a href="https://github.com/ArtifactDB/takane"><strong>takane</strong></a>-formatted datasets and results.
+Developers can define subclasses to load data from their own local/remote sources, e.g., <a href="https://github.com/ArtifactDB/gypsum-worker"><strong>gypsum</strong></a>.</p>
+<p>To demonstrate, we'll show how to read a dataset from the local filesystem with Node.js.
+Given a string containing some kind of &quot;path&quot; with Unix file separators, developers should define a method to get/list the contents of the file or directory.</p>
+<pre class="prettyprint source lang-js"><code>import * as fs from &quot;fs&quot;;
+
+export function getFile(path) {
+    const contents = fs.readFileSync(path, null);
+    return new Uint8Array(contents);
+}
+
+export function listFiles(path) {
+    return fs.readdirSync(path);
+}
+</code></pre>
+<p>We define a subclass of the <code>AbstractDataset</code>:</p>
+<pre class="prettyprint source lang-js"><code>import * as bt from &quot;bakana-takane&quot;
+
+class LocalDataset extends bt.AbstractDataset {
+    constructor(path) {
+        super(path, getFile, listFiles);
+    }
+
+    // Extra methods required by bakana; omitting the
+    // serialize/unserialize methods for simplicity.
+    static format() {
+        return &quot;local-takane&quot;;
+    }
+
+    abbreviate() {
+        return { &quot;path&quot;: path };
+    }
+};
+</code></pre>
+<p>Instances of our <code>LocalDataset</code> can now be used in <strong>bakana</strong>:</p>
+<pre class="prettyprint source lang-js"><code>const ds = new LocalDataset(&quot;/path/to/dataset&quot;);
+let state = await bakana.createAnalysis();
+let params = bakana.analysisDefaults();
+await bakana.runAnalysis(state, { dataset: ds }, params);
+</code></pre>
+<p>Subclasses of the <code>AbstractResult</code> are even easier to define:</p>
+<pre class="prettyprint source lang-js"><code>class LocalResult extends bt.AbstractResult {
+    constructor(path) {
+        super(path, getFile, listFiles);
+    }
+};
+</code></pre></article>
+    </section>
+
+
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.2</a> on Thu May 02 2024 16:08:43 GMT+0000 (Coordinated Universal Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+<script src="scripts/search.js" defer></script>
+
+
+<script src="scripts/collapse.js" defer></script>
+
+
+</body>
+</html>
